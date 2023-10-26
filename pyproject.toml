@@ -11,6 +11,7 @@ ipykernel = "^6.25.2"
 matplotlib = "^3.8.0"
 networkx = "^3.2"
 pydot = "^1.4.2"
+tqdm = "^4.66.1"
 
 
 [build-system]
