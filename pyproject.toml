@@ -6,12 +6,13 @@ authors = ["ANDREA GALELLA s310166 <s310166@studenti.polito.it>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "~3.11"
 ipykernel = "^6.25.2"
 matplotlib = "^3.8.0"
 networkx = "^3.2"
 pydot = "^1.4.2"
 tqdm = "^4.66.1"
+scipy = "^1.11.3"
 
 
 [build-system]
