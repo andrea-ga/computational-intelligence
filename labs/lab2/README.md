@@ -69,11 +69,11 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
   4) `fitness = 3`  -> We're in the special state. Right row and right number of objects.
   5) `fitness = -1` -> We're in a row with 0 elements.
 
-The ES (1 + λ) (with λ = 5, 1_000/λ generations) gets to achieve around the 95% of win rate:
+The ES (1 + λ) (with λ = 20, 1_000/λ generations) gets to achieve around the 95% of win rate:
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/89ec50c3-8063-4989-b3eb-2a2328900e1a)
 
-The ES (μ + λ) (with μ = 5, λ = 5, 1_000/λ generations) gets to achieve the 100% of win rate:
+The ES (μ + λ) (with μ = 10, λ = 20, 1_000/λ generations) gets to achieve the 100% of win rate:
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/c4385943-b958-41d8-b919-6278a493ad18)
 
