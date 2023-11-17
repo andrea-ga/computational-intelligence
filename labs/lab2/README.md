@@ -1,5 +1,7 @@
 Author: Andrea Galella s310166
-
+</br>
+E-mail: <andrea.galella@studenti.polito.it> or <galella.andrea@gmail.com>
+</br>
 ### References:
   - [Wikipedia](https://en.wikipedia.org/wiki/Nim)
   - [Course repository](https://github.com/squillero/computational-intelligence)
@@ -22,7 +24,7 @@ Before starting to implement the ES, I tried doing some matches to benchmark the
 </br>
 `All benchmarks are created from Nim(5) and played againts the pure_random agent on a total number of 100 matches.`
 </br>
-The optimal strategy gets to achieve around 70% of winning probability, which is good...
+The optimal strategy gets to achieve around 70% of win rate, which is good...
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/464fea43-4c7d-4f02-80ae-d55471033db9)
 
@@ -67,7 +69,7 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
   4) `fitness = 3`  -> We're in the special state. Right row and right number of objects.
   5) `fitness = -1` -> We're in a row with 0 elements.
 
-This ES (with λ = 5, 1_000/λ generations, ) gets to achieve around the 95% of winning probability:
+This ES (with λ = 5, 1_000/λ generations, ) gets to achieve around the 95% of win rate:
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/ba3013ba-3289-4c22-b6eb-61709a00fa0c)
 
