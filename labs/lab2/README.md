@@ -1,7 +1,7 @@
 # LAB 2 - NIM
 
 Definitions:
-  1. `state`: An instance of the game. With the total number of objects remaining in each row. 
+  1. `state`: An instance of the game. Each instance has the total number of objects remaining in each row. 
   2. `nim sum`: sum of the bitwise XOR of the number of elements of each row.
 
 ## GOALS
@@ -16,7 +16,7 @@ The optimal strategy gets to achieve around 70% of winning probability, which is
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/464fea43-4c7d-4f02-80ae-d55471033db9)
 
-..But I couldn't stop wondering if there was any way to improve it.
+..But I started wondering if there was any way to improve it.
 Searching the internet about informations, I found a way to implement a 100% winning strategy (Thanks to Wikipedia).
 
 The strategy is based on the definition of a special state.
@@ -57,7 +57,7 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
   4) `fitness = 3`  -> We're in the special state. Right row and right number of objects.
   5) `fitness = -1` -> We're in a row with 0 elements.
 
-This ES gets to achieve around the 95% o winning probability:
+This ES gets to achieve around the 95% of winning probability:
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/ba3013ba-3289-4c22-b6eb-61709a00fa0c)
 
