@@ -54,7 +54,7 @@ An Individual inside a population is composed by the following attributes:
   4. `strategy`: a Nimply object that puts together the row and number of objects to take.
   5. `fitness`: an integer number that indicates the evaluation of the move. Greater is the value, better is the move.
 
-For each state, we start with populating the population by selecting one Individual for each row.
+For each state, we start with populating the population by selecting one Individual for each non-empty row.
 </br>
 Then we select for each individual the number of objects to take from that row. This is done by selecting one of the value in the num_obj list, based on a probability given by the weights array -> bigger the weight value, higher the probability to get selected. 
 
@@ -67,7 +67,6 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
   2) `fitness = 1`  -> A move that achieves a nim sum of 0. Best move for the great part of the game.
   3) `fitness = 2`  -> We're in the special state. The row is the right one, but the number of objects is not correct.
   4) `fitness = 3`  -> We're in the special state. Right row and right number of objects.
-  5) `fitness = -1` -> We're in a row with 0 elements.
 
 The ES (1 + λ) (with λ = 20, 1_000/λ generations) gets to achieve around the 95% of win rate:
 
