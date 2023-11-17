@@ -71,11 +71,12 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
 
 The ES (1 + λ) (with λ = 5, 1_000/λ generations) gets to achieve around the 95% of win rate:
 
-![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/2a528359-8c20-45a1-8c11-9564f77d5e81)
+![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/89ec50c3-8063-4989-b3eb-2a2328900e1a)
 
 The ES (μ + λ) (with μ = 5, λ = 5, 1_000/λ generations) gets to achieve the 100% of win rate:
 
-![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/234bbc34-0dd6-4c7e-9bc8-2c06b6bb5e91)
+![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/c4385943-b958-41d8-b919-6278a493ad18)
+
 
 
 
