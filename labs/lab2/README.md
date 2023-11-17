@@ -33,18 +33,18 @@ The second rule is essential, and will make the opponent lose.
 
 
 ### ES
-For the implementation of the Evolution Strategy I chose to implement a (1 + lambda) strategy. Where lambda is the number of children created at each generation (iteration). In this type of strategy the resulting population at the end of each generation si given by: lambda children + parent.
+For the implementation of the Evolution Strategy I chose to implement a (1 + lambda) strategy. Where lambda is the number of children created at each generation (iteration). In this type of strategy the resulting population at the end of each generation is given by: lambda children + parent. From here we select the individual with the best fitness to be the parent of the next generation.
 
 An Individual inside a population is composed by the following attributes:
-  1. `row`: an integer that indicates from which row we want to remove the objects
-  2. `poss`: a list of integer. This list contains all the possible number of objects we can remove from that row
-  3. `weights`: an array of float. Each weight is associated, by the index, to a poss
-  4. `strategy`: a Nimply object that puts together the row and number of objects to take
-  5. `fitness`: an integer number that indicates the evaluation of the move. Greater is the value, better is the move
+  1. `row`: an integer that indicates from which row we want to remove the objects.
+  2. `num_obj`: a list of integer. This list contains all the possible number of objects we can remove from that row.
+  3. `weights`: an array of float. Each weight is associated, by the index, to a num_obj element.
+  4. `strategy`: a Nimply object that puts together the row and number of objects to take.
+  5. `fitness`: an integer number that indicates the evaluation of the move. Greater is the value, better is the move.
 
 For each state, we start with populating the population by selecting one Individual for each row.
 </br>
-Then we select for each individual the number of objects to take from that row. This is done by selecting one of the value in the poss list, based on a probability given by the weights array -> bigger the weight value, higher the probability to get selected. 
+Then we select for each individual the number of objects to take from that row. This is done by selecting one of the value in the num_obj list, based on a probability given by the weights array -> bigger the weight value, higher the probability to get selected. 
 
 The weights are random values, that gets mutated with a gaussian. The mutation rate is fixed at the value of 0.5.
 
