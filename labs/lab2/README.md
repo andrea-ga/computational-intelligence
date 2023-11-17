@@ -45,7 +45,7 @@ The second rule is essential, and will make the opponent lose.
 
 
 ### ES
-For the implementation of the Evolution Strategy I chose to implement a (1 + λ) strategy. Where lambda is the number of children created at each generation (iteration). In this type of strategy the resulting population at the end of each generation is given by: λ children + parent. From here we select the individual with the best fitness to be the parent of the next generation.
+For the implementation of the Evolution Strategy I chose to implement a (1 + λ) strategy and a (μ + λ) strategy. Where μ is the number of parents chosen at each generation (iteration) and λ is the number of children created at each generation (iteration). In this type of strategy the resulting population at the end of each generation is given by: λ children + μ parents. From here we select the μ individuals with the best fitness to be the parents of the next generation.
 
 An Individual inside a population is composed by the following attributes:
   1. `row`: an integer that indicates from which row we want to remove the objects.
@@ -69,10 +69,13 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
   4) `fitness = 3`  -> We're in the special state. Right row and right number of objects.
   5) `fitness = -1` -> We're in a row with 0 elements.
 
-This ES (with λ = 5, 1_000/λ generations, ) gets to achieve around the 95% of win rate:
+The ES (1 + λ) (with λ = 5, 1_000/λ generations) gets to achieve around the 95% of win rate:
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/2a528359-8c20-45a1-8c11-9564f77d5e81)
 
+The ES (μ + λ) (with μ = 5, λ = 5, 1_000/λ generations) gets to achieve the 100% of win rate:
+
+![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/234bbc34-0dd6-4c7e-9bc8-2c06b6bb5e91)
 
 
 
