@@ -33,7 +33,7 @@ Searching the internet about informations, I found a way to implement a 100% win
 
 The strategy is based on the definition of a special state.
 </br>
-Special state: there's only one row that has a number of elements greater or equal to 2.
+`Special state`: there's only one row that has a number of elements greater or equal to 2.
 </br>
 The winning strategy is achieved by following two rules:
   1. In normal play, we always try to make a move that results in a state with a nim sum equals to 0.
@@ -71,7 +71,8 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
 
 This ES (with λ = 5, 1_000/λ generations, ) gets to achieve around the 95% of win rate:
 
-![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/ba3013ba-3289-4c22-b6eb-61709a00fa0c)
+![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/2a528359-8c20-45a1-8c11-9564f77d5e81)
+
 
 
 
