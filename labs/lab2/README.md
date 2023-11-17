@@ -56,3 +56,8 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
   3) `fitness = 2`  -> We're in the special state. The row is the right one, but the number of objects is not correct.
   4) `fitness = 3`  -> We're in the special state. Right row and right number of objects.
   5) `fitness = -1` -> We're in a row with 0 elements.
+
+This ES gets to achieve around the 95% o winning probability:
+
+![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/ba3013ba-3289-4c22-b6eb-61709a00fa0c)
+
