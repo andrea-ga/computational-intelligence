@@ -1,7 +1,17 @@
+Author: Andrea Galella s310166
+
+### References:
+  - [Wikipedia](https://en.wikipedia.org/wiki/Nim)
+  - [Course repository](https://github.com/squillero/computational-intelligence)
+
 # LAB 2 - NIM
 
+*Nim is a mathematical game of strategy in which two players take turns removing (or "nimming") objects from distinct heaps or piles. On each turn, a player must remove at least one object, and may remove any number of objects provided they all come from the same heap or pile. Depending on the version being played, the goal of the game is either to avoid taking the last object or to take the last object.* (Wikipedia)
+
+The version of the game we're going to play with is the one where the goal is to avoid taking the last object, also called the *misére game* version.
+
 Definitions:
-  1. `state`: An instance of the game. Each instance has the total number of objects remaining in each row. 
+  1. `state`: An instance of the game. Each instance is defined by the total number of objects remaining in each row. 
   2. `nim sum`: sum of the bitwise XOR of the number of elements of each row.
 
 ## GOALS
@@ -10,7 +20,7 @@ Definitions:
 
 Before starting to implement the ES, I tried doing some matches to benchmark the goodness of the template given strategies.
 </br>
-`All benchmarks are againts the pure_random agent and based on a total number of 100 matches.`
+`All benchmarks are created from Nim(5) and played againts the pure_random agent on a total number of 100 matches.`
 </br>
 The optimal strategy gets to achieve around 70% of winning probability, which is good...
 
@@ -33,7 +43,7 @@ The second rule is essential, and will make the opponent lose.
 
 
 ### ES
-For the implementation of the Evolution Strategy I chose to implement a (1 + lambda) strategy. Where lambda is the number of children created at each generation (iteration). In this type of strategy the resulting population at the end of each generation is given by: lambda children + parent. From here we select the individual with the best fitness to be the parent of the next generation.
+For the implementation of the Evolution Strategy I chose to implement a (1 + λ) strategy. Where lambda is the number of children created at each generation (iteration). In this type of strategy the resulting population at the end of each generation is given by: λ children + parent. From here we select the individual with the best fitness to be the parent of the next generation.
 
 An Individual inside a population is composed by the following attributes:
   1. `row`: an integer that indicates from which row we want to remove the objects.
@@ -46,7 +56,7 @@ For each state, we start with populating the population by selecting one Individ
 </br>
 Then we select for each individual the number of objects to take from that row. This is done by selecting one of the value in the num_obj list, based on a probability given by the weights array -> bigger the weight value, higher the probability to get selected. 
 
-The weights are random values, that gets mutated with a gaussian. The mutation rate is fixed at the value of 0.5.
+The weights are random values, that gets mutated with a gaussian with fixed values mu = 0 and sigma = 0.01. The mutation rate is fixed at the value of 0.5.
 
 A strategy is created by putting together the row with the selected number of objects.
 </br>
@@ -57,7 +67,9 @@ From this we can evaluate the fitness value of the move. A fitness can have 5 di
   4) `fitness = 3`  -> We're in the special state. Right row and right number of objects.
   5) `fitness = -1` -> We're in a row with 0 elements.
 
-This ES gets to achieve around the 95% of winning probability:
+This ES (with λ = 5, 1_000/λ generations, ) gets to achieve around the 95% of winning probability:
 
 ![immagine](https://github.com/andrea-ga/computational-intelligence/assets/55812399/ba3013ba-3289-4c22-b6eb-61709a00fa0c)
+
+
 
