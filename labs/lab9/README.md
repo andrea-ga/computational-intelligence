@@ -3,7 +3,6 @@ Author: Andrea Galella s310166
 E-mail: <andrea.galella@studenti.polito.it> or <galella.andrea@gmail.com>
 </br>
 ### References:
-  - [Wikipedia](https://en.wikipedia.org/wiki/Nim)
   - [Course repository](https://github.com/squillero/computational-intelligence)
 
 # LAB 9 - EA
