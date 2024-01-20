@@ -7,6 +7,9 @@ import numpy as np
 
 
 class Move(Enum):
+    '''
+    Selects where you want to place the taken piece. The rest of the pieces are shifted
+    '''
     TOP = 0
     BOTTOM = 1
     LEFT = 2
@@ -21,6 +24,9 @@ class Player(ABC):
     @abstractmethod
     def make_move(self, game: 'Game') -> tuple[tuple[int, int], Move]:
         '''
+        The game accepts coordinates of the type (X, Y). X goes from left to right, while Y goes from top to bottom, as in 2D graphics.
+        Thus, the coordinates that this method returns shall be in the (X, Y) format.
+
         game: the Quixo game. You can use it to override the current game with yours, but everything is evaluated by the main game
         return values: this method shall return a tuple of X,Y positions and a move among TOP, BOTTOM, LEFT and RIGHT
         '''
@@ -30,12 +36,19 @@ class Player(ABC):
 class Game(object):
     def __init__(self) -> None:
         self._board = np.ones((5, 5), dtype=np.uint8) * -1
+        self.current_player_idx = 1
 
-    def get_board(self):
+    def get_board(self) -> np.ndarray:
         '''
         Returns the board
         '''
         return deepcopy(self._board)
+
+    def get_current_player(self) -> int:
+        '''
+        Returns the current player
+        '''
+        return deepcopy(self.current_player_idx)
 
     def print(self):
         '''Prints the board. -1 are neutral pieces, 0 are pieces of player 0, 1 pieces of player 1'''
@@ -74,15 +87,15 @@ class Game(object):
     def play(self, player1: Player, player2: Player) -> int:
         '''Play the game. Returns the winning player'''
         players = [player1, player2]
-        current_player_idx = 1
         winner = -1
         while winner < 0:
-            current_player_idx += 1
-            current_player_idx %= len(players)
+            self.current_player_idx += 1
+            self.current_player_idx %= len(players)
             ok = False
             while not ok:
-                from_pos, slide = players[current_player_idx].make_move(self)
-                ok = self.__move(from_pos, slide, current_player_idx)
+                from_pos, slide = players[self.current_player_idx].make_move(
+                    self)
+                ok = self.__move(from_pos, slide, self.current_player_idx)
             winner = self.check_winner()
         return winner
 
