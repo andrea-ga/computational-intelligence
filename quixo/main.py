@@ -7,7 +7,6 @@ import tqdm
 import pickle
 import math
 
-
 class RandomPlayer(Player):
     def __init__(self) -> None:
         super().__init__()
@@ -22,52 +21,110 @@ class MyPlayer(Player):
     def __init__(self) -> None:
         super().__init__()
 
-    def make_move(self, game: 'MinMaxGame', state, player_id) -> tuple[int, tuple[tuple[int, int], Move]]:
+    def make_move(self, game: 'MinMaxGame', alpha, beta, f, visited_states, depth, max_depth) -> tuple[int, tuple[tuple[int, int], Move]]:
         winner = game.check_winner()
-        opt_state = ()
+        opt_move = ()
+        current_state = copy.deepcopy(game.current_state)
+        current_board = copy.deepcopy(game.get_board())
+        counter = 0
+
+        if depth >= max_depth: #HARD CUT OFF
+            f.write(f"###################CUT OFF####################\n")
+            return (0, opt_move)
 
         if winner != -1:
-            print("WINNER REACHED")
-            return (winner, opt_state)
+            if winner == 0:
+                reward = 1
+            else:
+                reward = -1
+            f.write(f"**********WINNER REACHED - PLAYER {winner}*************\n")
+            return (reward, opt_move)
         
-        children_states = game.get_children_states(state, player_id)
-        print(children_states)
-
-        if player_id == 0:
+        possible_moves = game.get_possible_moves(current_state, game.current_player_idx)
+        possible_moves = game.remove_symmetries(possible_moves, game.current_player_idx, current_board)
+        
+        if game.current_player_idx == 0:
             max_value = -math.inf
-            for child_state in children_states.keys():
-                #if state.is_equivalent(child_state):
-                  #  continue  # Don't explore equivalent states
+            while len(possible_moves) != 0:
+                child_state = possible_moves[random.randint(0, len(possible_moves)-1)]
+                possible_moves.remove(child_state)
+                from_pos, slide = child_state
+                game.moveMinMax(from_pos, slide, game.current_player_idx)
+                game.current_state = game.matrix_to_set(game.get_board())
+
+                f.write(f"PLAYER {game.current_player_idx} DID <{from_pos}, {slide}>\n")
+                f.write(f"STATE: {game.current_state}\n")
+                f.write(f"BOARD:\n{game.get_board()}\n")
+
+                if (game.current_state, game.current_player_idx) in visited_states:   #DON'T RETURN TO A PREVIOUS STATE
+                    game.current_state = copy.deepcopy(current_state)
+                    game._board = copy.deepcopy(current_board)
+                    f.write("_________ALREADY VISITED STATE___________\n")
+                    continue
+
+                visited_states.append((game.current_state, game.current_player_idx))
                 
-                reward, _ = self.make_move(game, child_state, player_id)
+                game.current_player_idx = 1
+                reward, _ = self.make_move(game, alpha, beta, f, visited_states, depth+1, max_depth)
+                counter += reward
+                game.current_player_idx = 0
+                game.current_state = copy.deepcopy(current_state)
+                game._board = copy.deepcopy(current_board)
 
-                print(reward)
-                if max_value < reward:
-                    max_value = reward
-                    opt_state = children_states[child_state]
-                    print("HERE1")
-                    print(opt_state)
+                if counter > max_value:
+                    max_value = counter
+                    opt_move = child_state
+                
+                alpha = max(alpha, max_value)
+                if alpha >= beta:
+                    f.write("---------------PRUNING-----------------\n")
+                    break
 
-                return (max_value, opt_state)
-        elif player_id == 1:
+            return (max_value, opt_move)
+        elif game.current_player_idx == 1:
             min_value = math.inf
-            for child_state in children_states.keys():
-                #if state.is_equivalent(child_state):
-                 #   continue  # Don't explore equivalent states
+            while len(possible_moves) != 0:
+                child_state = possible_moves[random.randint(0, len(possible_moves)-1)]
+                possible_moves.remove(child_state)
+                from_pos, slide = child_state
+                game.moveMinMax(from_pos, slide, game.current_player_idx)
+                game.current_state = game.matrix_to_set(game.get_board())
 
-                reward, _ = self.make_move(game, child_state, player_id)
+                f.write(f"PLAYER {game.current_player_idx} DID <{from_pos}, {slide}>\n")
+                f.write(f"STATE: {game.current_state}\n")
+                f.write(f"BOARD:\n{game.get_board()}\n")
 
-                if min_value > reward:
-                    min_value = reward
-                    opt_state = children_states[child_state]
-                    print("HERE2")
-                    print(opt_state)
+                if (game.current_state, game.current_player_idx) in visited_states:   #DON'T RETURN TO A PREVIOUS STATE
+                    game.current_state = copy.deepcopy(current_state)
+                    game._board = copy.deepcopy(current_board)
+                    f.write("_________ALREADY VISITED STATE___________\n")
+                    continue
 
-                return (min_value, opt_state)
+                visited_states.append((game.current_state, game.current_player_idx))
+
+                game.current_player_idx = 0
+                reward, _ = self.make_move(game, alpha, beta, f, visited_states, depth+1, max_depth)
+                counter += reward
+                game.current_player_idx = 1
+                game.current_state = copy.deepcopy(current_state)
+                game._board = copy.deepcopy(current_board)
+
+                if counter < min_value:
+                    min_value = counter
+                    opt_move = child_state
+
+                beta = min(beta, min_value)
+                if beta <= alpha:
+                    f.write("---------------PRUNING-----------------\n")
+                    break
+
+            return (min_value, opt_move)
+
 
 class MinMaxGame(Game):
     def __init__(self) -> None:
         super().__init__()
+        self.current_state = ([], [])
 
     def matrix_to_set(self, board: np.ndarray):
         zero_set = []
@@ -80,101 +137,97 @@ class MinMaxGame(Game):
                 elif board[row][column] == 1:
                     one_set.append((column, row))
 
-        return (frozenset(zero_set), frozenset(one_set))
+        return (sorted(zero_set), sorted(one_set))
+    
+    def remove_symmetries(self, moves, player_id, current_board):
+        new_possible_moves = []
+        states = []
 
-    def get_children_states(self, state, player_id):
+        for s in moves:
+            self.moveMinMax(s[0], s[1], player_id)
+
+            new_state = self.matrix_to_set(self.get_board())
+
+            if new_state in states:
+                continue
+
+            rotated_states = self.rotate(self.get_board())
+            states.append(rotated_states)
+
+            reflected_states = self.reflect(self.get_board())
+            states.append(reflected_states)
+
+            states.append(new_state)
+            new_possible_moves.append(s)
+
+            self._board = copy.deepcopy(current_board)
+
+        return new_possible_moves
+    
+    def rotate(self, board):
+        rotated_states = []
+
+        board1 = np.rot90(board)    #ROTATE 90 DEGREE
+        rotated_states.append(self.matrix_to_set(board1))
+        board2 = np.rot90(board, k=2) #ROTATE 180 DEGREE
+        rotated_states.append(self.matrix_to_set(board2))
+        board3 = np.rot90(board, k=3)   #ROTATE 270 DEGREE
+        rotated_states.append(self.matrix_to_set(board3))
+                    
+        return rotated_states
+
+    def reflect(self, board):
+        reflected_states = []
+
+        board1 = np.fliplr(board)   #REFLECT HORIZONTALLY
+        reflected_states.append(self.matrix_to_set(board1))
+        board2 = np.flipud(board)   #REFLECT VERTICALLY
+        reflected_states.append(self.matrix_to_set(board2))
+        board3 = np.rot90(np.fliplr(board))    #REFLECT DIAGONALLY
+        reflected_states.append(self.matrix_to_set(board3))
+        board4 = np.rot90(np.flipud(board))    #REFLECT ANTI-DIAGONALLY
+        reflected_states.append(self.matrix_to_set(board4))
+                    
+        return reflected_states
+
+    def get_possible_moves(self, state, player_id):
         possible_from_pos = [(0,0),(1,0),(2,0),(3,0),(4,0),(0,1),(4,1),(0,2),(4,2),(0,3),(4,3),(0,4),(1,4),(2,4),(3,4),(4,4)]
         possible_actions = []
-        children_states = {}
-
-        tmp_board = self.get_board()
-
+        possible_moves = []
+        
         if player_id == 0:
             possible_from_pos = [p for p in possible_from_pos if p not in state[1]]
-
-            for p in possible_from_pos:
-                possible_actions = []
-
-                if p != (0,0) and p != (1,0) and p != (2,0) and p != (3,0) and p != (4,0):
-                    possible_actions.append(Move.TOP)
-                
-                if p != (4,0) and p != (4,1) and p != (4,2) and p != (4,3) and p != (4,4):
-                    possible_actions.append(Move.RIGHT)
-
-                if p != (0,4) and p != (1,4) and p != (2,4) and p != (3,4) and p != (4,4):
-                    possible_actions.append(Move.BOTTOM)
-
-                if p != (0,4) and p != (0,3) and p != (0,2) and p != (0,1) and p != (0,0):
-                    possible_actions.append(Move.LEFT)
-
-                for s in possible_actions:
-                    self.moveMinMax(p, s, player_id)
-
-                    children_states[self.matrix_to_set(self.get_board())] = (p, s)
-
-                    self._board = tmp_board
         elif player_id == 1:
             possible_from_pos = [p for p in possible_from_pos if p not in state[0]]
 
-            for p in possible_from_pos:
-                possible_actions = []
+        for p in possible_from_pos:
+            possible_actions = []
 
-                if p != (0,0) and p != (1,0) and p != (2,0) and p != (3,0) and p != (4,0):
-                    possible_actions.append(Move.TOP)
-                
-                if p != (4,0) and p != (4,1) and p != (4,2) and p != (4,3) and p != (4,4):
-                    possible_actions.append(Move.RIGHT)
+            if p != (0,0) and p != (1,0) and p != (2,0) and p != (3,0) and p != (4,0):
+                possible_actions.append(Move.TOP)
+            
+            if p != (4,0) and p != (4,1) and p != (4,2) and p != (4,3) and p != (4,4):
+                possible_actions.append(Move.RIGHT)
 
-                if p != (0,4) and p != (1,4) and p != (2,4) and p != (3,4) and p != (4,4):
-                    possible_actions.append(Move.BOTTOM)
+            if p != (0,4) and p != (1,4) and p != (2,4) and p != (3,4) and p != (4,4):
+                possible_actions.append(Move.BOTTOM)
 
-                if p != (0,4) and p != (0,3) and p != (0,2) and p != (0,1) and p != (0,0):
-                    possible_actions.append(Move.LEFT)
+            if p != (0,4) and p != (0,3) and p != (0,2) and p != (0,1) and p != (0,0):
+                possible_actions.append(Move.LEFT)
 
-                for s in possible_actions:
-                    self.moveMinMax(p, s, player_id)
+            for s in possible_actions:
+                possible_moves.append((p,s))
 
-                    children_states[self.matrix_to_set(self.get_board())] = (p, s)
+        return possible_moves
 
-                    self._board = tmp_board
-
-        return children_states
-
-    def moveMinMax(self, from_pos: tuple[int, int], slide: Move, player_id: int) -> bool:
-        if player_id > 1:
-            print("WRONG PLAYER INDEX")
-            return False
-        
-        prev_value = copy.deepcopy(self._board[(from_pos[1], from_pos[0])])
-        acceptable = self.takeMinMax((from_pos[1], from_pos[0]), player_id)
-
-        if acceptable:
-            acceptable = self._Game__slide((from_pos[1], from_pos[0]), slide)
-            if not acceptable:
-                self._board[(from_pos[1], from_pos[0])] = copy.deepcopy(prev_value)
-                
-        return acceptable
-    
-    def takeMinMax(self, from_pos: tuple[int, int], player_id: int) -> bool:
-        acceptable: bool = (
-            (from_pos[0] < 5 and from_pos[1] == 0)
-            or (from_pos[0] < 5 and from_pos[1] == 4)
-            or (from_pos[1] < 5 and from_pos[0] == 0)
-            or (from_pos[1] < 5 and from_pos[0] == 4)
-        ) and (self._board[from_pos] < 0 or self._board[from_pos] == player_id)
-        if acceptable:
-            self._board[from_pos] = player_id
-
-        return acceptable
-
-    def playMinMax(self, training: bool, player1: "Player", player2: "Player") -> int:
-        '''Play the game. Update qtable. Returns the winning player'''
+    def playMinMax(self, testing: bool, player1: "Player", player2: "Player") -> int:
+        '''Play the game. Returns the winning player'''
         players = [player1, player2]
         winner = -1
         num_moves = 0
         self._board = np.ones((5, 5), dtype=np.uint8) * -1 #RESET BOARD
 
-        #if not training:
+        #if testing:
             #print("START")
             #self.print()
 
@@ -190,15 +243,30 @@ class MinMaxGame(Game):
             slide = -1
             self.current_state = self.matrix_to_set(self.get_board())
 
+            if testing:
+                f = open("quixo/play.txt", "w")
+                f.write("^^^^^^^^^^^START^^^^^^^^^^^\n")
+                f.write(f"STATE: {self.current_state}\n")
+                f.write(f"BOARD:\n{self.get_board()}\n")
+                f.close()
+                f = open("quixo/play.txt", "a")
+            
+            visited_states = []
+
             while not ok:
-                _, opt_state = players[self.current_player_idx].make_move(self, self.current_state, self.current_player_idx)
-                print(opt_state)
-                from_pos, slide = opt_state
-                ok = self.moveMinMax(from_pos, slide, self.current_player_idx)
+                if self.current_player_idx == 0:
+                    _, opt_move = players[self.current_player_idx].make_move(self, -math.inf, math.inf, f, visited_states, 0, 10)
+                else:
+                    opt_move = players[self.current_player_idx].make_move(self)
 
-            self.next_state = self.matrix_to_set(self.get_board())
+                if testing:
+                    f.write(f"OPT_MOVE: {opt_move}")
+                    f.close()
+                    exit(1)
 
-            #if not training:
+                ok = self._Game__move(opt_move[0], opt_move[1], self.current_player_idx)
+
+            #if testing:
                 #print(f"Player: {self.current_player_idx}")
                 #self.print()
             
@@ -213,74 +281,24 @@ class MyPlayer2(Player):
         super().__init__()
 
     def make_move(self, game: 'RLGame') -> tuple[tuple[int, int], Move]:
-        if game.current_state not in game.qtable:
-            game.qtable[game.current_state] = np.zeros(64)
+        current_state = copy.deepcopy(game.current_state)
+        possible_moves = game.get_possible_moves(current_state, game.current_player_idx)
 
-        not_acceptable = [0, 2, 4, 8, 12, 16, 19, 22, 27, 30, 35, 38, 43, 45, 46, 49, 53, 57, 61, 63]
+        hashable_key_cs = tuple(tuple(inner_tuple) for inner_tuple in current_state)
+        if (hashable_key_cs, game.current_player_idx) not in game.qtable:
+            game.qtable[(hashable_key_cs, game.current_player_idx)] = game.initialize_qtable(possible_moves)
 
-        max_Q = np.max(np.array([x for i, x in enumerate(game.qtable[game.current_state]) 
-                                 if i not in not_acceptable and i not in game.current_state[1]]))
+        max_Q = max(game.qtable[(hashable_key_cs, game.current_player_idx)].values())
         
-        best_actions = []
+        best_moves = []
 
-        for i, q_value in enumerate(game.qtable[game.current_state]):
-            if q_value == max_Q and i not in not_acceptable and i not in game.current_state[1]:
-                best_actions.append(i)
+        for i in game.qtable[(hashable_key_cs, game.current_player_idx)]:
+            if game.qtable[(hashable_key_cs, game.current_player_idx)][i] == max_Q:
+                best_moves.append(i)
 
-        action = best_actions[np.random.randint(len(best_actions))]
+        from_pos, slide = best_moves[np.random.randint(len(best_moves))]
 
-        moves = [Move.TOP, Move.BOTTOM, Move.LEFT, Move.RIGHT]
-
-        if action < 4:
-            from_pos = (0, 0)
-            move = moves[action]
-        elif action < 8:
-            from_pos = (1, 0)
-            move = moves[action - 4]
-        elif action < 12:
-            from_pos = (2, 0)
-            move = moves[action - 8]
-        elif action < 16:
-            from_pos = (3, 0)
-            move = moves[action - 12]
-        elif action < 20:
-            from_pos = (4, 0)
-            move = moves[action - 16]
-        elif action < 24:
-            from_pos = (0, 1)
-            move = moves[action - 20]
-        elif action < 28:
-            from_pos = (4, 1)
-            move = moves[action - 24]
-        elif action < 32:
-            from_pos = (0, 2)
-            move = moves[action - 28]
-        elif action < 36:
-            from_pos = (4, 2)
-            move = moves[action - 32]
-        elif action < 40:
-            from_pos = (0, 3)
-            move = moves[action - 36]
-        elif action < 44:
-            from_pos = (4, 3)
-            move = moves[action - 40]
-        elif action < 48:
-            from_pos = (0, 4)
-            move = moves[action - 44]
-        elif action < 52:
-            from_pos = (1, 4)
-            move = moves[action - 48]
-        elif action < 56:
-            from_pos = (2, 4)
-            move = moves[action - 52]
-        elif action < 60:
-            from_pos = (3, 4)
-            move = moves[action - 56]
-        elif action < 64:
-            from_pos = (4, 4)
-            move = moves[action - 60]
-
-        return from_pos, move
+        return from_pos, slide
     
 class RLGame(Game):
     def __init__(self) -> None:
@@ -300,172 +318,157 @@ class RLGame(Game):
                 elif board[row][column] == 1:
                     one_set.append((column, row))
 
-        return (frozenset(zero_set), frozenset(one_set))
-
-    def update_Q_table(self, alpha, gamma, current_state, from_pos, slide, reward, next_state) -> None:
-        if current_state not in self.qtable:
-            self.qtable[current_state] = np.zeros(64)
-        if next_state not in self.qtable:
-            self.qtable[next_state] = np.zeros(64)
-
-        if from_pos == (0, 0):
-            action = 0
-        elif from_pos == (1, 0):
-            action = 4
-        elif from_pos == (2, 0):
-            action = 8
-        elif from_pos == (3, 0):
-            action = 12
-        elif from_pos == (4, 0):
-            action = 16
-        elif from_pos == (0, 1):
-            action = 20
-        elif from_pos == (4, 1):
-            action = 24
-        elif from_pos == (0, 2):
-            action = 28
-        elif from_pos == (4, 2):
-            action = 32
-        elif from_pos == (0, 3):
-            action = 36
-        elif from_pos == (4, 3):
-            action = 40
-        elif from_pos == (0, 4):
-            action = 44
-        elif from_pos == (1, 4):
-            action = 48
-        elif from_pos == (2, 4):
-            action = 52
-        elif from_pos == (3, 4):
-            action = 56
-        elif from_pos == (4, 4):
-            action = 60        
-
-        action += slide.value
-
-        max_next_Q = np.max(self.qtable[next_state])
-        #TIME DIFFERENCE
-        self.qtable[current_state][action] = (1 - alpha) * self.qtable[current_state][action] + alpha * (reward + gamma * max_next_Q)
-        #MONTE CARLO
-        #self.qtable[current_state][action] = self.qtable[current_state][action] + alpha * reward
-
-    def moveRL(self, from_pos: tuple[int, int], slide: Move, player_id: int) -> bool:
-        if player_id > 1:
-            print("WRONG PLAYER INDEX")
-            return False
-        
-        prev_value = copy.deepcopy(self._board[(from_pos[1], from_pos[0])])
-        acceptable = self.takeRL((from_pos[1], from_pos[0]), player_id)
-
-        if acceptable:
-            acceptable = self.slideRL((from_pos[1], from_pos[0]), slide)
-            if not acceptable:
-                self._board[(from_pos[1], from_pos[0])] = copy.deepcopy(prev_value)
-                
-        return acceptable
+        return (sorted(zero_set), sorted(one_set))
     
-    def takeRL(self, from_pos: tuple[int, int], player_id: int) -> bool:
-        acceptable: bool = (
-            (from_pos[0] < 5 and from_pos[1] == 0)
-            or (from_pos[0] < 5 and from_pos[1] == 4)
-            or (from_pos[1] < 5 and from_pos[0] == 0)
-            or (from_pos[1] < 5 and from_pos[0] == 4)
-        ) and (self._board[from_pos] < 0 or self._board[from_pos] == player_id)
-        if acceptable:
-            self._board[from_pos] = player_id
+    def set_to_matrix(self, state):
+        board = np.ones((5, 5), dtype=np.uint8) * -1
 
-        return acceptable
+        for s in state[0]:
+            board[s[1]][s[0]] = 0
+
+        for s in state[1]:
+            board[s[1]][s[0]] = 1
+
+        return board
     
-    def slideRL(self, from_pos: tuple[int, int], slide: Move) -> bool:
-        '''Slide the other pieces'''
-        # define the corners
-        SIDES = [(0, 0), (0, 4), (4, 0), (4, 4)]
-        # if the piece position is not in a corner
-        if from_pos not in SIDES:
-            # if it is at the TOP, it can be moved down, left or right
-            acceptable_top: bool = from_pos[0] == 0 and (
-                slide == Move.BOTTOM or slide == Move.LEFT or slide == Move.RIGHT
-            )
-            # if it is at the BOTTOM, it can be moved up, left or right
-            acceptable_bottom: bool = from_pos[0] == 4 and (
-                slide == Move.TOP or slide == Move.LEFT or slide == Move.RIGHT
-            )
-            # if it is on the LEFT, it can be moved up, down or right
-            acceptable_left: bool = from_pos[1] == 0 and (
-                slide == Move.BOTTOM or slide == Move.TOP or slide == Move.RIGHT
-            )
-            # if it is on the RIGHT, it can be moved up, down or left
-            acceptable_right: bool = from_pos[1] == 4 and (
-                slide == Move.BOTTOM or slide == Move.TOP or slide == Move.LEFT
-            )
-        # if the piece position is in a corner
-        else:
-            # if it is in the upper left corner, it can be moved to the right and down
-            acceptable_top: bool = from_pos == (0, 0) and (
-                slide == Move.BOTTOM or slide == Move.RIGHT)
-            # if it is in the lower left corner, it can be moved to the right and up
-            acceptable_left: bool = from_pos == (4, 0) and (
-                slide == Move.TOP or slide == Move.RIGHT)
-            # if it is in the upper right corner, it can be moved to the left and down
-            acceptable_right: bool = from_pos == (0, 4) and (
-                slide == Move.BOTTOM or slide == Move.LEFT)
-            # if it is in the lower right corner, it can be moved to the left and up
-            acceptable_bottom: bool = from_pos == (4, 4) and (
-                slide == Move.TOP or slide == Move.LEFT)
-        # check if the move is acceptable
-        acceptable: bool = acceptable_top or acceptable_bottom or acceptable_left or acceptable_right
-        # if it is
-        if acceptable:
-            # take the piece
-            piece = self._board[from_pos]
-            # if the player wants to slide it to the left
-            if slide == Move.LEFT:
-                # for each column starting from the column of the piece and moving to the left
-                for i in range(from_pos[1], 0, -1):
-                    # copy the value contained in the same row and the previous column
-                    self._board[(from_pos[0], i)] = self._board[(
-                        from_pos[0], i - 1)]
-                # move the piece to the left
-                self._board[(from_pos[0], 0)] = piece
-            # if the player wants to slide it to the right
-            elif slide == Move.RIGHT:
-                # for each column starting from the column of the piece and moving to the right
-                for i in range(from_pos[1], self._board.shape[1] - 1, 1):
-                    # copy the value contained in the same row and the following column
-                    self._board[(from_pos[0], i)] = self._board[(
-                        from_pos[0], i + 1)]
-                # move the piece to the right
-                self._board[(from_pos[0], self._board.shape[1] - 1)] = piece
-            # if the player wants to slide it upward
-            elif slide == Move.TOP:
-                # for each row starting from the row of the piece and going upward
-                for i in range(from_pos[0], 0, -1):
-                    # copy the value contained in the same column and the previous row
-                    self._board[(i, from_pos[1])] = self._board[(
-                        i - 1, from_pos[1])]
-                # move the piece up
-                self._board[(0, from_pos[1])] = piece
-            # if the player wants to slide it downward
-            elif slide == Move.BOTTOM:
-                # for each row starting from the row of the piece and going downward
-                for i in range(from_pos[0], self._board.shape[0] - 1, 1):
-                    # copy the value contained in the same column and the following row
-                    self._board[(i, from_pos[1])] = self._board[(
-                        i + 1, from_pos[1])]
-                # move the piece down
-                self._board[(self._board.shape[0] - 1, from_pos[1])] = piece
-        return acceptable
+    def initialize_qtable(self, possible_moves):
+        moves_values = {}
+
+        for j in possible_moves:
+            moves_values[j] = 0.0
+
+        return moves_values
     
-    def playRL(self, training: bool, player1: "Player", player2: "Player") -> int:
+    def remove_symmetries(self, moves, player_id, current_board):
+        new_possible_moves = []
+        states = []
+
+        for s in moves:
+            self._Game__move(s[0], s[1], player_id)
+
+            new_state = self.matrix_to_set(self.get_board())
+
+            if new_state in states:
+                continue
+
+            rotated_states = self.rotate(self.get_board())
+            states.append(rotated_states)
+
+            reflected_states = self.reflect(self.get_board())
+            states.append(reflected_states)
+
+            states.append(new_state)
+            new_possible_moves.append(s)
+
+            self._board = copy.deepcopy(current_board)
+
+        return new_possible_moves
+    
+    def rotate(self, board):
+        rotated_states = []
+
+        board1 = np.rot90(board)    #ROTATE 90 DEGREE
+        rotated_states.append(self.matrix_to_set(board1))
+        board2 = np.rot90(board, k=2) #ROTATE 180 DEGREE
+        rotated_states.append(self.matrix_to_set(board2))
+        board3 = np.rot90(board, k=3)   #ROTATE 270 DEGREE
+        rotated_states.append(self.matrix_to_set(board3))
+                    
+        return rotated_states
+
+    def reflect(self, board):
+        reflected_states = []
+
+        board1 = np.fliplr(board)   #REFLECT HORIZONTALLY
+        reflected_states.append(self.matrix_to_set(board1))
+        board2 = np.flipud(board)   #REFLECT VERTICALLY
+        reflected_states.append(self.matrix_to_set(board2))
+        board3 = np.rot90(np.fliplr(board))    #REFLECT DIAGONALLY
+        reflected_states.append(self.matrix_to_set(board3))
+        board4 = np.rot90(np.flipud(board))    #REFLECT ANTI-DIAGONALLY
+        reflected_states.append(self.matrix_to_set(board4))
+                    
+        return reflected_states
+
+    def get_possible_moves(self, state, player_id):
+        possible_from_pos = [(0,0),(1,0),(2,0),(3,0),(4,0),(0,1),(4,1),(0,2),(4,2),(0,3),(4,3),(0,4),(1,4),(2,4),(3,4),(4,4)]
+        possible_actions = []
+        possible_moves = []
+
+        if player_id == 0:
+            possible_from_pos = [p for p in possible_from_pos if p not in state[1]]
+        elif player_id == 1:
+            possible_from_pos = [p for p in possible_from_pos if p not in state[0]]
+
+        for p in possible_from_pos:
+            possible_actions = []
+
+            if p != (0,0) and p != (1,0) and p != (2,0) and p != (3,0) and p != (4,0):
+                possible_actions.append(Move.TOP)
+            
+            if p != (4,0) and p != (4,1) and p != (4,2) and p != (4,3) and p != (4,4):
+                possible_actions.append(Move.RIGHT)
+
+            if p != (0,4) and p != (1,4) and p != (2,4) and p != (3,4) and p != (4,4):
+                possible_actions.append(Move.BOTTOM)
+
+            if p != (0,4) and p != (0,3) and p != (0,2) and p != (0,1) and p != (0,0):
+                possible_actions.append(Move.LEFT)
+
+            for s in possible_actions:
+                possible_moves.append((p,s))
+
+        return possible_moves
+    
+    def how_to_get_there(self, current_state, next_state):
+        moves = []
+        current_board = copy.deepcopy(self.get_board())
+        board = self.set_to_matrix(current_state)
+
+        possible_moves = self.get_possible_moves(current_state, self.current_player_idx)
+
+        for p in possible_moves:
+            self._board = copy.deepcopy(board)
+            self._Game__move(p[0], p[1], self.current_player_idx)
+
+            state = self.matrix_to_set(self.get_board())
+
+            if state[0] == next_state[0] and state[1] == next_state[1]:
+                moves.append((p[0], p[1]))
+
+        self._board = copy.deepcopy(current_board)
+
+        return moves
+
+    def update_Q_table(self, alpha, gamma, current_state, moves, reward, next_state) -> None:
+        possible_moves_cs = self.get_possible_moves(copy.deepcopy(current_state), self.current_player_idx)
+        hashable_key_cs = tuple(tuple(inner_tuple) for inner_tuple in current_state)
+        if (hashable_key_cs, self.current_player_idx) not in self.qtable:
+            self.qtable[(hashable_key_cs, self.current_player_idx)] = self.initialize_qtable(possible_moves_cs)
+
+        next_player = (self.current_player_idx+1)%2
+        possible_moves_ns = self.get_possible_moves(copy.deepcopy(next_state), next_player)
+        hashable_key_ns = tuple(tuple(inner_tuple) for inner_tuple in next_state)
+        if (hashable_key_ns, next_player) not in self.qtable:
+            self.qtable[(hashable_key_ns, next_player)] = self.initialize_qtable(possible_moves_ns)
+
+        max_next_Q = max(self.qtable[(hashable_key_ns, next_player)].values())
+
+        for m in moves:
+            #TIME DIFFERENCE
+            self.qtable[(hashable_key_cs, self.current_player_idx)][m] = (1 - alpha) * self.qtable[(hashable_key_cs, self.current_player_idx)][m] + alpha * (reward + gamma * max_next_Q)
+            #MONTE CARLO
+            #self.qtable[current_state][m] = self.qtable[current_state][m] + alpha * reward
+    
+    def playRL(self, player1: "Player", player2: "Player") -> int:
         '''Play the game. Update qtable. Returns the winning player'''
         players = [player1, player2]
         winner = -1
         num_moves = 0
         self._board = np.ones((5, 5), dtype=np.uint8) * -1 #RESET BOARD
 
-        if not training:
-            print("START")
-            self.print()
+        #print("START")
+        #self.print()
 
         while winner < 0:
             num_moves += 1
@@ -477,20 +480,30 @@ class RLGame(Game):
             ok = False
             from_pos = -1
             slide = -1
-            self.current_state = self.matrix_to_set(self.get_board())
 
-            #if not training:
-                #if self.current_state not in self.qtable:
-                 #   print("NOT IN QTABLE")
-                #else:
-                  #  print(self.qtable[self.current_state])
+            current_states = []
+            next_states = []
+            moves_list = []
+
+            self.current_state = self.matrix_to_set(self.get_board())
+            current_states.append(self.current_state)
+            for cs in self.rotate(self.get_board()):
+                current_states.append(cs)
+            for cs in self.reflect(self.get_board()):
+                current_states.append(cs)
 
             while not ok:
                 from_pos, slide = players[self.current_player_idx].make_move(self)
-                ok = self.moveRL(from_pos, slide, self.current_player_idx)
+                ok = self._Game__move(from_pos, slide, self.current_player_idx)
 
-            if not training:
-                print(self.current_player_idx, from_pos, slide)
+            #print(self.current_player_idx, from_pos, slide)
+
+            self.next_state = self.matrix_to_set(self.get_board())
+            next_states.append(self.next_state)
+            for ns in self.rotate(self.get_board()):
+                next_states.append(ns)
+            for ns in self.reflect(self.get_board()):
+                next_states.append(ns)
 
             winner = self.check_winner()
             reward = 0
@@ -499,47 +512,52 @@ class RLGame(Game):
             elif winner == 1:
                 reward = -1
 
-            self.next_state = self.matrix_to_set(self.get_board())
+            for c in zip(current_states, next_states):
+                moves = self.how_to_get_there(c[0], c[1])
+                moves_list.append(moves)
+            
+            for c in zip(current_states, next_states, moves_list):
+                self.update_Q_table(0.1, 0.9, c[0], c[2], reward, c[1])
 
-            self.update_Q_table(0.2, 1, self.current_state, from_pos, slide, reward, self.next_state)
-
-            if not training:
-                print(f"Player: {self.current_player_idx}")
-                self.print()
+            #print(f"Player: {self.current_player_idx}")
+            #self.print()
             
         return winner
 
     def train_agent(self) -> None:
+        print("TRAINING")
         for _ in tqdm.tqdm(range(10_000)):
             player1 = RandomPlayer()
             player2 = RandomPlayer()
-            self.playRL(True, player1, player2)
+            self.playRL(player1, player2)
             #self.print()
 
 
 if __name__ == '__main__':
-    #g = RLGame()
+    g = RLGame()
     #g.train_agent()
-    g = MinMaxGame()
+    #g = MinMaxGame()
 
-    #print(g.qtable)
-
-    #with open('quixo/05-05-qtable.pkl', 'wb') as f:
+    #with open('quixo/10k-01-09-qtable.pkl', 'wb') as f:
      #   pickle.dump(g.qtable, f)
 
     #LOAD Q-TABLE FROM FILE
-    #with open('quixo/mc-05-qtable.pkl', 'rb') as f:
-     #   g.qtable = pickle.load(f)
+    with open('quixo/10k-01-09-qtable.pkl', 'rb') as f:
+        g.qtable = pickle.load(f)
+    f.close()
 
-    player1 = MyPlayer()
+    #print(g.qtable)
+
+    player1 = MyPlayer2()
     player2 = RandomPlayer()
 
     num_wins_0 = 0
     num_wins_1 = 0
     num_ties = 0
 
+    print(f"PLAYING")
     for _ in tqdm.tqdm(range(100)):
-        winner = g.playMinMax(False, player1, player2)
+        winner = g.play(player1, player2)
         if winner == 0:
             num_wins_0 += 1
         elif winner == 1:
