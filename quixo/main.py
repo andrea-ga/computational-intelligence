@@ -657,17 +657,15 @@ class MyGame(Game):
 
         next_player = (self.current_player_idx+1)%2
         hashable_key_ns = tuple(tuple(inner_tuple) for inner_tuple in next_state)   #Used as index for the q-table
-        #If the next_state is in the Q-table, finds the max Q-value for that state
+        #If the next_state is in the Q-table, finds the max Q-value for the next state
         if (hashable_key_ns, next_player) in self.qtables[qtable_index]:
             max_next_Q = max(self.qtables[qtable_index][(hashable_key_ns, next_player)].values())
         else:
         #Otherwise, it sets the value to 0.0
             max_next_Q = 0.0
 
-        #TIME DIFFERENCE
+        #Update Q-table
         self.qtables[qtable_index][(hashable_key_cs, self.current_player_idx)][(from_pos, slide)] = (1 - alpha) * self.qtables[qtable_index][(hashable_key_cs, self.current_player_idx)][(from_pos, slide)] + alpha * (reward + gamma * max_next_Q)
-        #MONTE CARLO
-        #self.qtable[current_state][m] = self.qtables[qtable_index][current_state][m] + alpha * reward
 
     def train_agent(self) -> None:
         '''Trains the agent'''
@@ -700,7 +698,7 @@ class MyGame(Game):
             while not ok:
                 if isinstance(players[self.current_player_idx], MyPlayerMinMax):
                     #Increasing the max_depth will result in better results but longer computational time
-                    _, opt_move = players[self.current_player_idx].make_move(self, self.current_player_idx, -math.inf, math.inf, f, visited_states, 0, max_depth=1)
+                    _, opt_move = players[self.current_player_idx].make_move(self, self.current_player_idx, -math.inf, math.inf, f, visited_states, 0, max_depth=2)
                 elif isinstance(players[self.current_player_idx], MyPlayerRLMinMax):
                     opt_move = players[self.current_player_idx].make_move(self, f, visited_states)
                 else:
