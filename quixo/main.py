@@ -751,8 +751,8 @@ if __name__ == '__main__':
     #MyPlayerRL uses Reinforcement Learning (Q-learning)    #NOT WORKING GREAT
     #MyPlayerRLMinMax uses a mix of RL and MinMax   #NOT AN IMPROVEMENT COMPARED TO MinMax
     
-    player2 = MyPlayerMinMax()
-    player1 = RandomPlayer()
+    player1 = MyPlayerMinMax()
+    player2 = RandomPlayer()
     
     players = [player1, player2]
 
