@@ -157,9 +157,10 @@ class MyPlayerRLMinMax(Player):
         '''Returns a tuple (from_pos, slide)'''
         equivalent_states = []  #List of all the possible equivalent states
         eq_state = []   #Stores the equivalent state found inside the Q-table
+        best_move = ()
         current_state = copy.deepcopy(game.current_state)
         hashable_key_cs = tuple(tuple(inner_tuple) for inner_tuple in current_state)
-        cs_in_q_table = (hashable_key_cs, game.current_player_idx) in game.qtables[game.current_player_idx]
+        cs_in_q_table = hashable_key_cs in game.qtables[game.current_player_idx]
         found = False
         num = 0         #Counter for the symmetry operations
         num_state = -1  #Stores the symmetry operation used
@@ -175,50 +176,53 @@ class MyPlayerRLMinMax(Player):
             for es in equivalent_states:
                 hashable_key = tuple(tuple(inner_tuple) for inner_tuple in es)  #Used as a key
 
-                if (hashable_key, game.current_player_idx) in game.qtables[game.current_player_idx]:
+                if hashable_key in game.qtables[game.current_player_idx]:
                     #Found an Equivalent State in Q-table
+                    found = True
                     num_state = num
                     eq_state = copy.deepcopy(es)
 
-                    max_Q = max(game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)].values())
-                    #Checks if the max Q-value is greater than 0.0
-                    if max_Q > 0.0:
-                        #Found an Equivalent State in Q-table, with a possible effective move
-                        #print(f"FOUND EQUIVALENT STATE FOR:\n{current_state}\n ES: {es}")
-                        found = True
-                    
-                        break
+                    values = game.qtables[game.current_player_idx][hashable_key] 
+                    possible_moves = game.get_possible_moves(es, game.current_player_idx)
+                    max_Q = -math.inf
+
+                    for key in values:
+                        if key in possible_moves:
+                            if values[key] > max_Q:
+                                best_move = key
+                                max_Q = values[key]
+
+                    break
 
                 num += 1
         #Otherwise
         else:
             #Found in Q-table
+            found = True
             hashable_key = hashable_key_cs
-            max_Q = max(game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)].values())
-            #Checks if the max Q-value is greater than 0.0
-            if max_Q > 0.0:
-                #Found in Q-table, with a possible effective move
-                #print(f"IN QTABLE\n{current_state}")
-                found = True
+            
+            values = game.qtables[game.current_player_idx][hashable_key]
+            possible_moves = game.get_possible_moves(current_state, game.current_player_idx)
+            max_Q = -math.inf
+
+            for key in values:
+                if key in possible_moves:
+                    if values[key] > max_Q:
+                        best_move = key
+                        max_Q = values[key]
         
         if found:
             #If the state or an equivalent one has been found inside the Q-table
-            best_moves = []
-
-            for i in game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)]:
-                if game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)][i] == max_Q:
-                    best_moves.append(i)
-
-            from_pos, slide = best_moves[np.random.randint(len(best_moves))]
+            from_pos, slide = best_move
 
             #If it is an equivalent one, finds the equivalent move (from_pos, slide) for the current state
             if not cs_in_q_table:
                 current_board = game.get_board()    #Saves the current board
 
                 #Creates the board for the equivalent state
-                game._board = game.state_to_board(eq_state)
+                game._board = game.state_to_board(eq_state) 
                 #Plays the optimal move
-                game._Game__move(from_pos, slide, game.current_player_idx)
+                game._Game__move(from_pos, slide, game.current_player_idx)  
 
                 #Operations to find the equivalent board for the next state
                 if num_state == 0: #ROTATE 90 DEGREE
@@ -263,9 +267,10 @@ class MyPlayerRL(Player):
         '''Returns a tuple (from_pos, slide)'''
         equivalent_states = []  #List of all the possible equivalent states
         eq_state = []   #Stores the equivalent state found inside the Q-table
+        best_move = ()
         current_state = copy.deepcopy(game.current_state)
         hashable_key_cs = tuple(tuple(inner_tuple) for inner_tuple in current_state)
-        cs_in_q_table = (hashable_key_cs, game.current_player_idx) in game.qtables[game.current_player_idx]
+        cs_in_q_table = hashable_key_cs in game.qtables[game.current_player_idx]
         found = False
         num = 0         #Counter for the symmetry operations
         num_state = -1  #Stores the symmetry operation used
@@ -281,39 +286,49 @@ class MyPlayerRL(Player):
             for es in equivalent_states:
                 hashable_key = tuple(tuple(inner_tuple) for inner_tuple in es)  #Used as a key
 
-                if (hashable_key, game.current_player_idx) in game.qtables[game.current_player_idx]:
+                if hashable_key in game.qtables[game.current_player_idx]:
                     #Found an Equivalent State in Q-table
-                    #print("EQUIVALENT STATE")
                     found = True
                     num_state = num
                     eq_state = copy.deepcopy(es)
-                    max_Q = max(game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)].values())
+
+                    values = game.qtables[game.current_player_idx][hashable_key] 
+                    possible_moves = game.get_possible_moves(es, game.current_player_idx)
+                    max_Q = -math.inf
+
+                    for key in values:
+                        if key in possible_moves:
+                            if values[key] > max_Q:
+                                best_move = key
+                                max_Q = values[key]
+
                     break
 
                 num += 1
 
             if not found:
                 #Picks a random move from the possible ones
-                #print("NEW STATE")
                 possible_moves = game.get_possible_moves(current_state, game.current_player_idx)
                 from_pos, slide = possible_moves[np.random.randint(len(possible_moves))]
         #Otherwise
         else:
             #Found in Q-table
-            #print("IN QTABLE")
             found = True
             hashable_key = hashable_key_cs
-            max_Q = max(game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)].values())
+            
+            values = game.qtables[game.current_player_idx][hashable_key]
+            possible_moves = game.get_possible_moves(current_state, game.current_player_idx)
+            max_Q = -math.inf
+
+            for key in values:
+                if key in possible_moves:
+                    if values[key] > max_Q:
+                        best_move = key
+                        max_Q = values[key]
         
         if found:
             #If the state or an equivalent one has been found inside the Q-table
-            best_moves = []
-
-            for i in game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)]:
-                if game.qtables[game.current_player_idx][(hashable_key, game.current_player_idx)][i] == max_Q:
-                    best_moves.append(i)
-
-            from_pos, slide = best_moves[np.random.randint(len(best_moves))]
+            from_pos, slide = best_move
 
             #If it is an equivalent one, finds the equivalent move (from_pos, slide) for the current state
             if not cs_in_q_table:
@@ -489,7 +504,6 @@ class MyPlayerMinMax(Player):
 
             return (min_value, opt_move)
 
-
 #GAME
 class MyGame(Game):
     def __init__(self) -> None:
@@ -649,30 +663,35 @@ class MyGame(Game):
     
     def update_Q_table(self, qtable_index, alpha, gamma, current_state, from_pos, slide, reward, next_state) -> None:
         '''Updates the Q-table'''
-        possible_moves_cs = self.get_possible_moves(copy.deepcopy(current_state), self.current_player_idx)
-        hashable_key_cs = tuple(tuple(inner_tuple) for inner_tuple in current_state)    #Used as index for the q-table
-        #If not available, adds the current_state to the Q-table
-        if (hashable_key_cs, self.current_player_idx) not in self.qtables[qtable_index]:
-            self.qtables[qtable_index][(hashable_key_cs, self.current_player_idx)] = self.initialize_qtable(possible_moves_cs)
-
         next_player = (self.current_player_idx+1)%2
-        hashable_key_ns = tuple(tuple(inner_tuple) for inner_tuple in next_state)   #Used as index for the q-table
+
+        hashable_key_cs = tuple(tuple(inner_tuple) for inner_tuple in current_state)    #Used as a key for the q-table
+        #If not available, adds the current_state to the Q-table
+        if hashable_key_cs not in self.qtables[qtable_index]:
+            #Gets possible moves of the current player
+            possible_moves_p = self.get_possible_moves(copy.deepcopy(current_state), self.current_player_idx)
+            #Gets possible moves of the next player
+            possible_moves_np = self.get_possible_moves(copy.deepcopy(current_state), next_player)
+
+            self.qtables[qtable_index][hashable_key_cs] = {**self.initialize_qtable(possible_moves_p), **self.initialize_qtable(possible_moves_np)}
+
+        hashable_key_ns = tuple(tuple(inner_tuple) for inner_tuple in next_state)   #Used as a key for the q-table
         #If the next_state is in the Q-table, finds the max Q-value for the next state
-        if (hashable_key_ns, next_player) in self.qtables[qtable_index]:
-            max_next_Q = max(self.qtables[qtable_index][(hashable_key_ns, next_player)].values())
+        if hashable_key_ns in self.qtables[qtable_index]:
+            max_next_Q = max(self.qtables[qtable_index][hashable_key_ns].values())
         else:
         #Otherwise, it sets the value to 0.0
             max_next_Q = 0.0
 
         #Update Q-table
-        self.qtables[qtable_index][(hashable_key_cs, self.current_player_idx)][(from_pos, slide)] = (1 - alpha) * self.qtables[qtable_index][(hashable_key_cs, self.current_player_idx)][(from_pos, slide)] + alpha * (reward + gamma * max_next_Q)
+        self.qtables[qtable_index][hashable_key_cs][(from_pos, slide)] = (1 - alpha) * self.qtables[qtable_index][hashable_key_cs][(from_pos, slide)] + alpha * (reward + gamma * max_next_Q)
 
     def train_agent(self) -> None:
         '''Trains the agent'''
         print("TRAINING")
         player1 = RandomPlayer()
         player2 = RandomPlayer()
-        for _ in tqdm.tqdm(range(10_000)):
+        for _ in tqdm.tqdm(range(1_000)):
             self._board = np.ones((5, 5), dtype=np.uint8) * -1 #RESET BOARD
             self.current_player_idx = 1 #RESET PLAYER INDEX
             self.playGame(player1, player2, training=True, testing=False)

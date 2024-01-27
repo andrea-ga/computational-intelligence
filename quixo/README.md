@@ -17,7 +17,8 @@ To reduce the number of states to visit at each run, the algorithm:
 - Uses alpha-beta pruning, to prune not promising branches;
 - Uses hard cut off, in order to be faster.
 
-Increasing the *max_depth* parameter (inside the *make_move* function of the *MyPlayerMinMax* class) allows to have better results but with longer computational time. This is because the hard cut off is called later, allowing the agent to discover more states.
+Increasing the *max_depth* parameter (inside the *make_move* function of the *MyPlayerMinMax* class) can bring to have better results but with longer execution time. This is because the hard cut off is called later, allowing the agent to discover more states.
+In the current solution it is setted to 2. Setting it to 1 can decrease a lot the execution time but with worse results.
 
 ## Results
 ### MinMax (player 0) vs Random (player 1) with *max_depth=1*
@@ -34,3 +35,4 @@ Increasing the *max_depth* parameter (inside the *make_move* function of the *My
 
 # Other Attempts
 ## Reinforcement Learning (Q-learning)
+## Mix of Reinforcement Learning and MinMax
